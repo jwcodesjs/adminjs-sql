@@ -8,10 +8,6 @@ import { DatabaseDialect } from './dialects/index.js';
 type PrimaryKey = string | number
 
 export class Resource extends BaseResource {
-  static override isAdapterFor(resource: any): boolean {
-    return resource instanceof ResourceMetadata;
-  }
-
   private knex: Knex;
 
   private dialect: DatabaseDialect;
@@ -135,11 +131,6 @@ export class Resource extends BaseResource {
       return insertedRecord[0];
     }
 
-    if (insertedRecord.length > 0 && typeof insertedRecord[0] === 'object') {
-      return insertedRecord[0];
-    }
-
-    console.warn('Unknown response type from knex insert, returning params');
     return params;
   }
 
