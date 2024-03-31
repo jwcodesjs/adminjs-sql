@@ -16,6 +16,7 @@ export default defineConfig({
       clean: true,
       cleanOnRerun: true,
       provider: 'istanbul',
+      reportOnFailure: true,
       reporter: ['cobertura', 'text', 'html'],
       thresholds: {
         functions: 80,
