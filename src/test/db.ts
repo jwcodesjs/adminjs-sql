@@ -42,9 +42,11 @@ type Env = {
   DIALECT: DatabaseDialect
   MYSQL_DATABASE: string
   MYSQL_DEFAULT_USER: string
+  MYSQL_HOST: string
   MYSQL_PASSWORD: string
   MYSQL_ROOT_PASSWORD: string
   POSTGRES_DB: string
+  POSTGRES_HOST: string
   POSTGRES_PASSWORD: string
   POSTGRES_USER: string
 }
@@ -71,7 +73,7 @@ export const getDatabaseConfig = (): DatabaseConfig => {
       database: env.POSTGRES_DB,
       databaseType: 'Postgres',
       dialect: 'postgresql',
-      host: 'localhost',
+      host: env.POSTGRES_HOST,
       password: env.POSTGRES_PASSWORD,
       port: 5432,
       schema: 'public',
@@ -84,7 +86,7 @@ export const getDatabaseConfig = (): DatabaseConfig => {
       database: env.MYSQL_DATABASE,
       databaseType: 'MySQL',
       dialect: 'mysql',
-      host: 'localhost',
+      host: env.MYSQL_HOST,
       password: env.MYSQL_ROOT_PASSWORD,
       port: 3306,
       schema: env.MYSQL_DATABASE,
