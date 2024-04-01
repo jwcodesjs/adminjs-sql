@@ -3,6 +3,7 @@ import { BaseProperty, type PropertyType } from "adminjs";
 export type ColumnInfo = {
   name: string;
   isId: boolean;
+  isEnum: boolean;
   position: number;
   defaultValue?: string | number | boolean;
   isNullable: boolean;
@@ -25,10 +26,13 @@ export class Property extends BaseProperty {
 
   private readonly _availableValues?: string[] | null;
 
+  private readonly _isEnum: boolean;
+
   constructor(column: ColumnInfo) {
     const {
       name,
       isId,
+      isEnum,
       position,
       isNullable,
       isEditable,
@@ -46,6 +50,7 @@ export class Property extends BaseProperty {
 
     this._name = name;
     this._isPrimary = isId;
+    this._isEnum = isEnum;
     this._isNullable = isNullable;
     this._isEditable = isEditable;
     this._referencedTable = referencedTable;
@@ -86,5 +91,9 @@ export class Property extends BaseProperty {
 
   override isRequired(): boolean {
     return !this._isNullable;
+  }
+
+  public isEnum(): boolean {
+    return this._isEnum;
   }
 }

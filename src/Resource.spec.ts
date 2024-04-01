@@ -43,6 +43,7 @@ describe("Resource", () => {
           new Property({
             isEditable: false,
             isId: true,
+            isEnum: false,
             isNullable: false,
             name: "id",
             position: 0,
@@ -52,17 +53,21 @@ describe("Resource", () => {
         ],
       );
 
-      expect(Resource.isAdapterFor(resourceMetadata)).toEqual(true);
+      expect(Resource.isAdapterFor(resourceMetadata))
+        .toEqual(true);
     });
 
     it("returns false for any other kind of resources", () => {
-      expect(Resource.isAdapterFor({} as ResourceMetadata)).toEqual(false);
+      expect(Resource.isAdapterFor({} as ResourceMetadata))
+        .toEqual(false);
     });
   });
 
   describe("#databaseType", () => {
     it("returns database dialect", async () => {
-      expect(database.resource("user").databaseType()).toEqual(
+      expect(database.resource("user")
+        .databaseType())
+        .toEqual(
         dbConfig.config.databaseType,
       );
     });
@@ -70,35 +75,45 @@ describe("Resource", () => {
 
   describe("#id", () => {
     it("returns the name of the entity", async () => {
-      expect(database.resource("post").id()).toEqual("post");
+      expect(database.resource("post")
+        .id())
+        .toEqual("post");
     });
   });
 
   describe("#properties", () => {
     it("returns all the properties", async () => {
-      expect(database.resource("post").properties()).toHaveLength(9);
+      expect(database.resource("post")
+        .properties())
+        .toHaveLength(9);
     });
   });
 
   describe("#property", () => {
     it("returns selected property", async () => {
-      const property = database.resource("post").property("id");
-      expect(property).toBeInstanceOf(BaseProperty);
+      const property = database.resource("post")
+        .property("id");
+      expect(property)
+        .toBeInstanceOf(BaseProperty);
     });
   });
 
   describe("#count", () => {
     it("returns number of records", async () => {
-      const count = await database.resource("post").count({} as Filter);
-      expect(count).toBeGreaterThanOrEqual(0);
+      const count = await database.resource("post")
+        .count({} as Filter);
+      expect(count)
+        .toBeGreaterThanOrEqual(0);
     });
   });
 
   describe("#create", () => {
     it("returns params", async () => {
-      const user = await database.resource("user").create(buildUser());
+      const user = await database.resource("user")
+        .create(buildUser());
 
-      expect(user.id).toBeDefined();
+      expect(user.id)
+        .toBeDefined();
     });
   });
 
@@ -147,46 +162,57 @@ describe("Resource", () => {
     });
   });
 
-  describe("#find", () => {
-    it("finds by record name", async () => {
-      const users = [buildUser(), buildUser()];
-      await database.resource("user").create(users[0]);
-      await database.resource("user").create(users[1]);
-      const filter = new Filter(undefined, database.resource("user"));
-      filter.filters = {
-        name: {
-          path: "name",
-          value: users[0].name,
-          property: database.resource("user").property("name") as BaseProperty,
-        },
-      };
+  describe('#find', () => {
+    let users: User[];
 
-      const record = await database.resource("user").find(filter, {});
+    beforeAll(async () => {
+      users = [
+        await database.resource('user')
+          .create(buildUser()),
+        await database.resource('user')
+          .create(buildUser()),
+      ] as User[];
+    });
+
+    it('finds by record name', async () => {
+      const filter = new Filter({ name: users[0].name }, database.resource('user'));
+
+      const record = await database.resource("user")
+        .find(filter, {});
 
       expect(record[0]?.get("name")).toEqual(users[0].name);
       expect(record[0]?.get("email")).toEqual(users[0].email);
       expect(record.length).toEqual(1);
     });
 
-    it("finds by record uuid column", async () => {
-      const user = await database.resource("user").create(buildUser());
-      const user2 = await database.resource("user").create(buildUser());
+    it('finds by record uuid column', async () => {
+      const profileResource = await getResource('profile');
+      const profile = await profileResource.create(buildProfile({ id: users[0].id! }));
+      await profileResource.create(buildProfile({ id: users[1].id! }));
+      const filter = new Filter({
+        id: profile.id,
+      }, profileResource);
 
-      const postResource = await getResource("profile");
-      const profile = await postResource.create(buildProfile({ id: user.id! }));
-      await postResource.create(buildProfile({ id: user2.id! }));
+      const record = await profileResource.find(filter, {});
+      expect(record[0].params)
+        .toMatchObject(profile);
+      expect(record.length)
+        .toEqual(1);
+    });
 
-      const filter = new Filter(undefined, postResource);
-      filter.filters = {
-        id: {
-          path: "id",
-          value: profile.id,
-          property: postResource.property("id") as BaseProperty,
-        },
-      };
-      const record = await postResource.find(filter, {});
-      expect(record[0].params).toMatchObject(profile);
-      expect(record.length).toEqual(1);
+    it('finds by enum column', async () => {
+      const postResource = await getResource('post');
+      const post = await postResource.create({
+        ...buildPost({ id: users[0].id! }),
+        status: 'INACTIVE',
+      });
+
+      const filter = new Filter({ status: post.status }, postResource);
+      const records = await postResource.find(filter);
+      expect(records)
+        .toSatisfyAll((record) => record.get('status') === post.status);
+      expect(records.length)
+        .toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -214,7 +240,8 @@ describe("Resource", () => {
     let user: User;
 
     beforeEach(async () => {
-      user = (await database.resource("user").create(buildUser())) as User;
+      user = (await database.resource("user")
+        .create(buildUser())) as User;
     });
 
     it("deletes the resource", async () => {

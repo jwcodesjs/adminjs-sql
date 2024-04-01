@@ -208,7 +208,8 @@ export class PostgresParser extends BaseDatabaseParser {
     });
 
     function getColumnInfo(column: Record<string, number | string>, enumCollection: EnumCollection = {}): ColumnInfo {
-      const availableValues = column.data_type === 'USER-DEFINED'
+      const isUserDefined = column.data_type === 'USER-DEFINED';
+      const availableValues = isUserDefined
       && enumCollection[`${column.udt_schema}.${column.udt_name}`]
         ? enumCollection[`${column.udt_schema}.${column.udt_name}`]
         : null;
@@ -218,6 +219,7 @@ export class PostgresParser extends BaseDatabaseParser {
         defaultValue: column.column_default,
         isEditable: column.is_updatable === 'YES',
         isId: column.key_type === 'PRIMARY KEY',
+        isEnum: Boolean(availableValues),
         isNullable: column.is_nullable === 'YES',
         name: column.column_name as string,
         position: column.ordinal_position as number,
