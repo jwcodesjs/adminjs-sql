@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config';
 
-const isPostgres = process.env.DIALECT === 'postgresql'
+const isPostgres = process.env.DIALECT === 'postgresql';
 
 export default defineConfig({
   test: {
@@ -8,10 +8,10 @@ export default defineConfig({
     pool: 'forks',
     coverage: {
       exclude: [
-          '.eslintrc.cjs',
-          'src/test',
-          'commitlint.config.cjs',
-          `${isPostgres ? 'src/dialects/mysql.parser.ts' : 'src/dialects/postgres.parser.ts'}`,
+        '.eslintrc.cjs',
+        'src/test',
+        'commitlint.config.cjs',
+        `${isPostgres ? 'src/dialects/mysql.parser.ts' : 'src/dialects/postgres.parser.ts'}`,
       ],
       clean: true,
       cleanOnRerun: true,

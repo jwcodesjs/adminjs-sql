@@ -5,11 +5,17 @@ import { ColumnInfo, Property } from '../Property.js';
 
 import { BaseDatabaseParser, ParseOptions } from './base-database.parser.js';
 
-const pgArrayAggToArray = (agg: string) => agg.replace(/{/g, '').replace(/}/g, '').split(',');
+type Enum = { schema: string; name: string; value: string };
+type EnumCollection = Record<string, string[]>;
+
+const pgArrayAggToArray = (agg: string) => agg.replace(/{/g, '')
+  .replace(/}/g, '')
+  .split(',');
 
 const getColumnType = (dbType: string): PropertyType => {
   switch (dbType) {
-  case 'uuid': return 'uuid';
+  case 'uuid':
+    return 'uuid';
   case 'bigint':
   case 'int8':
   case 'bigserial':
@@ -58,19 +64,10 @@ const getColumnType = (dbType: string): PropertyType => {
   }
 };
 
-const getColumnInfo = (column: Record<string, number | string>): ColumnInfo => ({
-  name: column.column_name as string,
-  isId: column.key_type === 'PRIMARY KEY',
-  position: column.ordinal_position as number,
-  defaultValue: column.column_default,
-  isNullable: column.is_nullable === 'YES',
-  isEditable: column.is_updatable === 'YES',
-  type: column.referenced_table ? 'reference' : getColumnType(column.data_type as string),
-  referencedTable: (column.referenced_table ?? null) as string | null,
-});
-
 export class PostgresParser extends BaseDatabaseParser {
   public static dialects = ['postgresql' as const];
+
+  private enumCollection?: EnumCollection;
 
   public async parse(parseOptions: ParseOptions) {
     const tableNames = await this.getTables(this.configuredSchema, parseOptions);
@@ -139,15 +136,18 @@ export class PostgresParser extends BaseDatabaseParser {
   }
 
   public async getProperties(table: string) {
+    const enumCollection = await this.getEnums();
     const query = this.knex
       .from('information_schema.columns as col')
       .select(
-        'col.column_name',
-        'col.ordinal_position',
         'col.column_default',
+        'col.column_name',
+        'col.data_type',
         'col.is_nullable',
         'col.is_updatable',
-        'col.data_type',
+        'col.ordinal_position',
+        'col.udt_name',
+        'col.udt_schema',
         'tco.constraint_type as key_type',
       )
       .leftJoin('information_schema.key_column_usage as kcu', (c) => c
@@ -187,7 +187,51 @@ export class PostgresParser extends BaseDatabaseParser {
         col.referenced_table = rel.referenced_table;
       }
 
-      return new Property(getColumnInfo(col));
+      const columnInfo = getColumnInfo(col, enumCollection);
+      return new Property(columnInfo);
     });
+
+    function getColumnInfo(column: Record<string, number | string>, enumCollection: EnumCollection = {}): ColumnInfo {
+      const availableValues = column.data_type === 'USER-DEFINED'
+      && enumCollection[`${column.udt_schema}.${column.udt_name}`]
+        ? enumCollection[`${column.udt_schema}.${column.udt_name}`]
+        : null;
+
+      return {
+        availableValues,
+        defaultValue: column.column_default,
+        isEditable: column.is_updatable === 'YES',
+        isId: column.key_type === 'PRIMARY KEY',
+        isNullable: column.is_nullable === 'YES',
+        name: column.column_name as string,
+        position: column.ordinal_position as number,
+        referencedTable: (column.referenced_table ?? null) as string | null,
+        type: column.referenced_table ? 'reference' : getColumnType(column.data_type as string),
+      };
+    }
+  }
+
+  async getEnums(): Promise<EnumCollection> {
+    if (this.enumCollection) return this.enumCollection;
+
+    const enums = await this.knex.from('pg_enum as enum')
+      .join('pg_type as type', 'type.oid', 'enum.enumtypid')
+      .join('pg_namespace as namespace', 'namespace.oid', 'type.typnamespace')
+      .select('namespace.nspname as schema', 'type.typname as name', 'enum.enumlabel as value')
+      .groupBy('namespace.nspname', 'type.typname', 'enum.enumlabel') as Enum[];
+
+    const groupedEnums: EnumCollection = {};
+    const createKey = (entry: Enum) => `${entry.schema}.${entry.name}`;
+    for (const entry of enums) {
+      const key = createKey(entry);
+      if (!groupedEnums[key]) {
+        groupedEnums[key] = [];
+      }
+
+      groupedEnums[key].push(entry.value);
+    }
+
+    this.enumCollection = groupedEnums;
+    return groupedEnums;
   }
 }

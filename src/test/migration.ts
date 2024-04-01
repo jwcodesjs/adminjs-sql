@@ -6,7 +6,15 @@ const isMySqlDialect = (dialect: DatabaseDialect) => dialect === 'mysql' || dial
 
 const getMigration = (schema: string, dialect: DatabaseDialect): Knex.Migration & { id: string } => ({
   async up(knex: Knex) {
-    return knex.schema
+    let upQuery = knex.schema;
+
+    if (dialect === 'postgresql') {
+      upQuery = upQuery.raw(
+        'CREATE TYPE public.status_enum AS ENUM (\'active-status-enum\', \'inactive-status-enum\');',
+      );
+    }
+
+    return upQuery
       .withSchema(schema)
       .createTable('user', (table) => {
         table.increments('id').notNullable();
@@ -15,39 +23,78 @@ const getMigration = (schema: string, dialect: DatabaseDialect): Knex.Migration 
       })
       .createTable('profile', (table) => {
         if (dialect === 'postgresql') {
-          table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
-          table.integer('user_id').notNullable().references('id').inTable(`${schema}.user`);
+          table.uuid('id')
+            .primary()
+            .defaultTo(knex.raw('gen_random_uuid()'));
+          table.integer('user_id')
+            .notNullable()
+            .references('id')
+            .inTable(`${schema}.user`);
         } else if (isMySqlDialect(dialect)) {
-          table.uuid('id').primary().defaultTo(knex.raw('(uuid())'));
-          table.integer('user_id').unsigned().notNullable().references('user.id');
+          table.uuid('id')
+            .primary()
+            .defaultTo(knex.raw('(uuid())'));
+          table.integer('user_id')
+            .unsigned()
+            .notNullable()
+            .references('user.id');
         }
 
-        table.text('bio').notNullable();
-        table.text('name').notNullable();
+        table.text('bio')
+          .notNullable();
+        table.text('name')
+          .notNullable();
       })
       .createTable('post', (table) => {
-        table.increments('id').notNullable();
-        table.dateTime('created_at').notNullable().defaultTo(knex.fn.now());
-        table.dateTime('updated_at').notNullable().defaultTo(knex.fn.now());
+        table.increments('id')
+          .notNullable();
+        table.dateTime('created_at')
+          .notNullable()
+          .defaultTo(knex.fn.now());
+        table.dateTime('updated_at')
+          .notNullable()
+          .defaultTo(knex.fn.now());
         table.json('some_json');
-        table.enum('status', ['ACTIVE', 'INACTIVE']).notNullable();
-        table.text('content').notNullable();
-        table.string('title', 255).notNullable();
-        table.boolean('published').notNullable().defaultTo(false);
+        table.enum('status', ['ACTIVE', 'INACTIVE'], {
+          useNative: true,
+          enumName: 'status_enum',
+          schemaName: schema,
+        })
+          .notNullable();
+        table.text('content')
+          .notNullable();
+        table.string('title', 255)
+          .notNullable();
+        table.boolean('published')
+          .notNullable()
+          .defaultTo(false);
 
         if (dialect === 'postgresql') {
-          table.integer('author_id').notNullable().references('id').inTable(`${schema}.user`);
+          table.integer('author_id')
+            .notNullable()
+            .references('id')
+            .inTable(`${schema}.user`);
         } else if (isMySqlDialect(dialect)) {
-          table.integer('author_id').unsigned().notNullable().references('user.id');
+          table.integer('author_id')
+            .unsigned()
+            .notNullable()
+            .references('user.id');
         }
       });
   },
   async down(knex: Knex) {
-    return knex.schema
+    let downQuery = knex.schema
       .withSchema(schema)
       .dropTableIfExists('post')
       .dropTableIfExists('profile')
       .dropTableIfExists('user');
+
+    if (dialect === 'postgresql') {
+      downQuery = downQuery.raw('DROP TYPE IF EXISTS public.status_enum');
+      downQuery = downQuery.raw(`DROP TYPE IF EXISTS ${schema}.status_enum`);
+    }
+
+    return downQuery;
   },
   id: 'initialize',
 });
