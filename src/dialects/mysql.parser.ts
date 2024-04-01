@@ -14,7 +14,7 @@ import {
 
 const getColumnInfo = (column: Record<string, any>): ColumnInfo => {
   const type = column.DATA_TYPE.toLowerCase();
-  const columnType = column.COLUMN_TYPE.toLowerCase();
+  const columnType = column.COLUMN_TYPE;
 
   let availableValues: string[] | null = null;
   if (type === "set" || type === "enum") {

@@ -93,14 +93,11 @@ describe("Property", () => {
       expect(property?.availableValues()).toEqual(null);
     });
 
-    it.skipIf(config.dialect === "postgresql")(
-      "returns available values when enum is given",
-      () => {
-        const property = getProperty("status");
+    it('returns available values when enum is given', () => {
+      const property = getProperty('status');
 
-        expect(property?.availableValues()).toEqual(["active", "inactive"]);
-      },
-    );
+      expect(property?.availableValues()).toEqual(['ACTIVE', 'INACTIVE']);
+    });
   });
 
   describe("#type", () => {

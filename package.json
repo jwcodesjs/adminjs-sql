@@ -28,7 +28,7 @@
     "release": "semantic-release",
     "test": "NODE_OPTIONS='--no-warnings' npm run test-postgres run && npm run test-mysql run",
     "test-postgres": "NODE_OPTIONS='--no-warnings' DIALECT=postgresql vitest",
-    "test-mysql": "NODE_OPTIONS='--no-warnings' DIALECT=mysql vitest"
+    "test-mysql": "NODE_OPTIONS='--no-warnings' DIALECT=mysql2 vitest"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.4.4",

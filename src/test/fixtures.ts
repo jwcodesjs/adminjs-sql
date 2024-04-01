@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import { Adapter } from "../Adapter.js";
+import { ConnectionOptions } from '../dialects/index.js';
 
 import type { DatabaseConfig, Post, Profile, User } from "./types.js";
 
@@ -28,18 +29,23 @@ export const buildPost = (user: { id: number }): Post => ({
 });
 
 export const getAdapter = (config: DatabaseConfig) =>
-  new Adapter(
-    config.dialect,
+  {
+  const connection: ConnectionOptions =
     {
       charset: config.charset,
       database: config.database,
       host: config.host,
       password: config.password,
       port: config.port,
-      schema: config.schema,
       user: config.user,
-    },
+    };
+
+  if (config.dialect !== 'mysql2') {
+    connection.schema = config.schema;
+  }
+
+  return new Adapter(config.dialect, connection,
     {
       ignoredTables: ["knex_migrations", "knex_migrations_lock"],
     },
-  );
+  );};
