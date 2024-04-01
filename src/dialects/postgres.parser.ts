@@ -3,7 +3,7 @@ import { PropertyType } from 'adminjs';
 import { DatabaseMetadata, ResourceMetadata } from '../metadata/index.js';
 import { ColumnInfo, Property } from '../Property.js';
 
-import { BaseDatabaseParser } from './base-database.parser.js';
+import { BaseDatabaseParser, ParseOptions } from './base-database.parser.js';
 
 const pgArrayAggToArray = (agg: string) => agg.replace(/{/g, '').replace(/}/g, '').split(',');
 
@@ -72,10 +72,9 @@ const getColumnInfo = (column: Record<string, number | string>): ColumnInfo => (
 export class PostgresParser extends BaseDatabaseParser {
   public static dialects = ['postgresql' as const];
 
-  public async parse() {
-    const schemaName = await this.getSchema();
-    const tableNames = await this.getTables(schemaName);
-    const resources = await this.getResources(tableNames, schemaName);
+  public async parse(parseOptions: ParseOptions) {
+    const tableNames = await this.getTables(this.configuredSchema, parseOptions);
+    const resources = await this.getResources(tableNames, this.configuredSchema);
     const resourceMap = new Map<string, ResourceMetadata>();
     resources.forEach((r) => {
       resourceMap.set(r.tableName, r);
@@ -91,7 +90,7 @@ export class PostgresParser extends BaseDatabaseParser {
     return result.rows?.[0]?.schema_name?.toString() ?? 'public';
   }
 
-  public async getTables(schemaName: string) {
+  public async getTables(schemaName: string, parseOptions: ParseOptions) {
     const query = await this.knex.raw(`
       SELECT table_name
       FROM information_schema.tables
@@ -108,7 +107,9 @@ export class PostgresParser extends BaseDatabaseParser {
       return [];
     }
 
-    return result.rows.map(({ table_name: table }) => table);
+    return result.rows
+      .map(({ table_name: table }) => table)
+      .filter((table: string) => !parseOptions.ignoredTables.includes(table));
   }
 
   public async getResources(tables: string[], schemaName: string) {
@@ -156,7 +157,7 @@ export class PostgresParser extends BaseDatabaseParser {
         .on('tco.constraint_name', 'kcu.constraint_name')
         .on('tco.constraint_schema', 'kcu.constraint_schema')
         .onVal('tco.constraint_type', 'PRIMARY KEY'))
-      .where('col.table_schema', 'public')
+      .where('col.table_schema', this.configuredSchema)
       .where('col.table_name', table);
 
     const columns = await query;

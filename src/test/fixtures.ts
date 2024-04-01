@@ -28,10 +28,13 @@ export const buildPost = (user: { id: number }): Post => ({
 });
 
 export const getAdapter = (config: DatabaseConfig) => new Adapter(config.dialect, {
+  charset: config.charset,
   database: config.database,
   host: config.host,
-  port: config.port,
-  user: config.user,
   password: config.password,
-  charset: config.charset,
+  port: config.port,
+  schema: config.schema,
+  user: config.user,
+}, {
+  ignoredTables: ['knex_migrations', 'knex_migrations_lock'],
 });

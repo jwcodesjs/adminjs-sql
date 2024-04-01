@@ -8,7 +8,7 @@ export async function setup() {
     await knex.destroy();
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error(error);
+    console.error('Failed setting up the database', error);
     process.exit(1);
   }
 }

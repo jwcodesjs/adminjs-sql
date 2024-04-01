@@ -25,9 +25,9 @@
     "build": "tsc",
     "lint": "eslint './src/**/*.{ts,js}' --ignore-pattern 'build' --ignore-pattern 'yarn.lock'",
     "release": "semantic-release",
-    "test": "npm run test-postgres run && npm run test-mysql run",
-    "test-postgres": "DIALECT=postgresql vitest",
-    "test-mysql": "DIALECT=mysql vitest"
+    "test": "NODE_OPTIONS='--no-warnings' npm run test-postgres run && npm run test-mysql run",
+    "test-postgres": "NODE_OPTIONS='--no-warnings' DIALECT=postgresql vitest",
+    "test-mysql": "NODE_OPTIONS='--no-warnings' DIALECT=mysql vitest"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.4.4",

@@ -6,6 +6,10 @@ import { DatabaseMetadata, ResourceMetadata } from '../metadata/index.js';
 
 import { ConnectionOptions, DatabaseDialect } from './types/index.js';
 
+export type ParseOptions = {
+  ignoredTables: string[];
+}
+
 export class BaseDatabaseParser {
   protected knex: Knex.Knex;
 
@@ -23,17 +27,20 @@ export class BaseDatabaseParser {
       throw new Error('Please provide your database');
     }
 
-    const knex = Knex.knex({
-      client: dialect,
-      connection,
-    });
-
     this.dialect = dialect;
     this.connectionOptions = connection;
-    this.knex = knex;
+    this.knex = Knex.knex({
+      client: dialect,
+      connection,
+      searchPath: this.configuredSchema,
+    });
   }
 
-  public async parse(): Promise<DatabaseMetadata> {
+  protected get configuredSchema() {
+    return this.connectionOptions.schema ?? 'public';
+  }
+
+  public async parse(parseOptions: ParseOptions): Promise<DatabaseMetadata> {
     throw new Error('Implement "parse" method for your database parser!');
   }
 
@@ -41,7 +48,7 @@ export class BaseDatabaseParser {
     throw new Error('Implement "getSchema" method for your database parser!');
   }
 
-  public async getTables(schemaName: string): Promise<string[]> {
+  public async getTables(schemaName: string, parseOptions: ParseOptions): Promise<string[]> {
     throw new Error('Implement "getTables" method for your database parser!');
   }
 

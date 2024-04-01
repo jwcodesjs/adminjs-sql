@@ -32,7 +32,7 @@ export const getDatabaseConfig = (): DatabaseConfig => {
       host: env.POSTGRES_HOST,
       password: env.POSTGRES_PASSWORD,
       port: 5432,
-      schema: 'public',
+      schema: env.POSTGRES_SCHEMA,
       user: env.POSTGRES_USER,
     };
   case 'mysql2':

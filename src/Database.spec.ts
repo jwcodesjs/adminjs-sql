@@ -23,8 +23,8 @@ describe('Database', () => {
 
   describe('#resources', () => {
     it('returns all entities', async () => {
-      // user, post, profile, knex_migration, knex_migration_lock
-      expect(new Database(databaseMetadata).resources()).toHaveLength(5);
+      // user, post, profile
+      expect(new Database(databaseMetadata).resources()).toHaveLength(3);
     });
   });
 });

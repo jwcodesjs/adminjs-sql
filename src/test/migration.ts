@@ -16,7 +16,7 @@ const getMigration = (schema: string, dialect: DatabaseDialect): Knex.Migration 
       .createTable('profile', (table) => {
         if (dialect === 'postgresql') {
           table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
-          table.integer('user_id').notNullable().references('user.id');
+          table.integer('user_id').notNullable().references('id').inTable(`${schema}.user`);
         } else if (isMySqlDialect(dialect)) {
           table.uuid('id').primary().defaultTo(knex.raw('(uuid())'));
           table.integer('user_id').unsigned().notNullable().references('user.id');
@@ -36,7 +36,7 @@ const getMigration = (schema: string, dialect: DatabaseDialect): Knex.Migration 
         table.boolean('published').notNullable().defaultTo(false);
 
         if (dialect === 'postgresql') {
-          table.integer('author_id').notNullable().references('user.id');
+          table.integer('author_id').notNullable().references('id').inTable(`${schema}.user`);
         } else if (isMySqlDialect(dialect)) {
           table.integer('author_id').unsigned().notNullable().references('user.id');
         }
@@ -44,6 +44,7 @@ const getMigration = (schema: string, dialect: DatabaseDialect): Knex.Migration 
   },
   async down(knex: Knex) {
     return knex.schema
+      .withSchema(schema)
       .dropTableIfExists('post')
       .dropTableIfExists('profile')
       .dropTableIfExists('user');
