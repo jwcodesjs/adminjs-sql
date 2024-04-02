@@ -168,7 +168,7 @@ export class Resource extends BaseResource {
     }
 
     for (const [key, filter] of Object.entries(query.filters ?? {})) {
-      const property = filter.property as Property || undefined;
+      const property = (filter.property as Property) || undefined;
       if (
         typeof filter.value === "object" &&
         ["date", "datetime"].includes(property.type())

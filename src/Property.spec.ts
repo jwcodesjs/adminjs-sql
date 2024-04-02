@@ -93,11 +93,11 @@ describe("Property", () => {
       expect(property?.availableValues()).toEqual(null);
     });
 
-    it('returns available values when enum is given', () => {
-      const property = getProperty('status');
+    it("returns available values when enum is given", () => {
+      const property = getProperty("status");
 
       expect(property?.isEnum()).toBe(true);
-      expect(property?.availableValues()).toEqual(['ACTIVE', 'INACTIVE']);
+      expect(property?.availableValues()).toEqual(["ACTIVE", "INACTIVE"]);
     });
   });
 

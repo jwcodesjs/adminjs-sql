@@ -9,12 +9,10 @@ import {
 } from "./base-database.parser.js";
 
 type Enum = { schema: string; name: string; value: string };
-type EnumCollection = Record<string, string[]>;
+type Enums = Record<string, string[]>;
 
 const pgArrayAggToArray = (agg: string) =>
-  agg.replace(/{/g, "")
-  .replace(/}/g, "")
-  .split(",");
+  agg.replace(/{/g, "").replace(/}/g, "").split(",");
 
 const getColumnType = (dbType: string): PropertyType => {
   switch (dbType) {
@@ -72,7 +70,7 @@ const getColumnType = (dbType: string): PropertyType => {
 export class PostgresParser extends BaseDatabaseParser {
   public static dialects = ["postgresql" as const];
 
-  private enumCollection?: EnumCollection;
+  private enums?: Enums;
 
   public async parse(parseOptions: ParseOptions) {
     const tableNames = await this.getTables(
@@ -145,19 +143,19 @@ export class PostgresParser extends BaseDatabaseParser {
   }
 
   public async getProperties(table: string) {
-    const enumCollection = await this.getEnums();
+    const enums = await this.getEnums();
     const query = this.knex
       .from("information_schema.columns as col")
       .select(
-        'col.column_default',
-        'col.column_name',
-        'col.data_type',
-        'col.is_nullable',
-        'col.is_updatable',
-        'col.ordinal_position',
-        'col.udt_name',
-        'col.udt_schema',
-        'tco.constraint_type as key_type',
+        "col.column_default",
+        "col.column_name",
+        "col.data_type",
+        "col.is_nullable",
+        "col.is_updatable",
+        "col.ordinal_position",
+        "col.udt_name",
+        "col.udt_schema",
+        "tco.constraint_type as key_type",
       )
       .leftJoin("information_schema.key_column_usage as kcu", (c) =>
         c
@@ -203,53 +201,69 @@ export class PostgresParser extends BaseDatabaseParser {
         col.referenced_table = rel.referenced_table;
       }
 
-      const columnInfo = getColumnInfo(col, enumCollection);
+      const columnInfo = getColumnInfo(col, enums);
       return new Property(columnInfo);
     });
 
-    function getColumnInfo(column: Record<string, number | string>, enumCollection: EnumCollection = {}): ColumnInfo {
-      const isUserDefined = column.data_type === 'USER-DEFINED';
-      const availableValues = isUserDefined
-      && enumCollection[`${column.udt_schema}.${column.udt_name}`]
-        ? enumCollection[`${column.udt_schema}.${column.udt_name}`]
-        : null;
+    function getColumnInfo(
+      column: Record<string, number | string>,
+      enums: Enums = {},
+    ): ColumnInfo {
+      const isUserDefined = column.data_type === "USER-DEFINED";
+      const availableValues =
+        isUserDefined && enums[`${column.udt_schema}.${column.udt_name}`]
+          ? enums[`${column.udt_schema}.${column.udt_name}`]
+          : null;
 
       return {
         availableValues,
         defaultValue: column.column_default,
-        isEditable: column.is_updatable === 'YES',
-        isId: column.key_type === 'PRIMARY KEY',
+        isEditable: column.is_updatable === "YES",
+        isId: column.key_type === "PRIMARY KEY",
         isEnum: Boolean(availableValues),
-        isNullable: column.is_nullable === 'YES',
+        isNullable: column.is_nullable === "YES",
         name: column.column_name as string,
         position: column.ordinal_position as number,
         referencedTable: (column.referenced_table ?? null) as string | null,
-        type: column.referenced_table ? 'reference' : getColumnType(column.data_type as string),
+        type: column.referenced_table
+          ? "reference"
+          : getColumnType(column.data_type as string),
       };
     }
   }
 
-  async getEnums(): Promise<EnumCollection> {
-    if (this.enumCollection) return this.enumCollection;
-
-    const enums = await this.knex.from('pg_enum as enum')
-      .join('pg_type as type', 'type.oid', 'enum.enumtypid')
-      .join('pg_namespace as namespace', 'namespace.oid', 'type.typnamespace')
-      .select('namespace.nspname as schema', 'type.typname as name', 'enum.enumlabel as value')
-      .groupBy('namespace.nspname', 'type.typname', 'enum.enumlabel') as Enum[];
-
-    const groupedEnums: EnumCollection = {};
-    const createKey = (entry: Enum) => `${entry.schema}.${entry.name}`;
-    for (const entry of enums) {
-      const key = createKey(entry);
-      if (!groupedEnums[key]) {
-        groupedEnums[key] = [];
-      }
-
-      groupedEnums[key].push(entry.value);
+  async getEnums(): Promise<Enums> {
+    if (this.enums) {
+      return this.enums;
     }
 
-    this.enumCollection = groupedEnums;
-    return groupedEnums;
+    const query = (await this.knex
+      .from("pg_enum as enum")
+      .join("pg_type as type", "type.oid", "enum.enumtypid")
+      .join("pg_namespace as namespace", "namespace.oid", "type.typnamespace")
+      .select(
+        "namespace.nspname as schema",
+        "type.typname as name",
+        "enum.enumlabel as value",
+      )
+      .groupBy(
+        "namespace.nspname",
+        "type.typname",
+        "enum.enumlabel",
+      )) as Enum[];
+
+    const enums: Enums = {};
+    const createKey = (entry: Enum) => `${entry.schema}.${entry.name}`;
+    for (const row of query) {
+      const key = createKey(row);
+      if (!enums[key]) {
+        enums[key] = [];
+      }
+
+      enums[key].push(row.value);
+    }
+
+    this.enums = enums;
+    return enums;
   }
 }
