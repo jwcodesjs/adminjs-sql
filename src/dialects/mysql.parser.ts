@@ -31,6 +31,7 @@ const getColumnInfo = (column: Record<string, any>): ColumnInfo => {
   return {
     name: column.COLUMN_NAME,
     isId,
+    isEnum: type === 'enum',
     position: column.ORDINAL_POSITION,
     defaultValue: column.COLUMN_DEFAULT,
     isNullable,

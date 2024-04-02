@@ -5,6 +5,7 @@ const isPostgres = process.env.DIALECT === 'postgresql';
 export default defineConfig({
   test: {
     globalSetup: ['src/test/setup.ts'],
+    setupFiles: ['src/test/testSetup.ts'],
     pool: 'forks',
     coverage: {
       exclude: [

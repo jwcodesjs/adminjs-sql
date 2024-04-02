@@ -83,7 +83,7 @@ export class Resource extends BaseResource {
         sortBy?: string;
         direction?: 'asc' | 'desc';
       };
-    },
+    } = {},
   ): Promise<BaseRecord[]> {
     const query = this.filterQuery(filter);
     if (options.limit) {
@@ -165,12 +165,16 @@ export class Resource extends BaseResource {
     const { filters } = filter;
 
     Object.entries(filters ?? {}).forEach(([key, filter]) => {
+      const property = filter.property as Property || undefined;
+
       if (
         typeof filter.value === 'object'
-        && ['date', 'datetime'].includes(filter.property.type())
+        && ['date', 'datetime'].includes(property.type())
       ) {
         q.whereBetween(key, [filter.value.from, filter.value.to]);
-      } else if (filter.property.type() === 'string') {
+      } else if (property.isEnum()) {
+        q.where(key, filter.value);
+      } else if (property.type() === 'string') {
         if (this.dialect === 'postgresql') {
           q.whereILike(key, `%${filter.value}%`);
         } else {
