@@ -76,7 +76,7 @@ jobs:
 
   publish:
     name: Publish
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'todo'
     needs:
       - lint
       - test-mysql
