@@ -1,11 +1,17 @@
-import { BaseRecord, BaseResource, Filter, ParamsType, SupportedDatabasesType } from 'adminjs';
-import type { Knex } from 'knex';
+import {
+  BaseRecord,
+  BaseResource,
+  type Filter,
+  type ParamsType,
+  type SupportedDatabasesType,
+} from "adminjs";
+import type { Knex } from "knex";
 
-import { ResourceMetadata } from './metadata/index.js';
-import { Property } from './Property.js';
-import { DatabaseDialect } from './dialects/index.js';
+import type { Property } from "./Property.js";
+import type { DatabaseDialect } from "./dialects/index.js";
+import { ResourceMetadata } from "./metadata/index.js";
 
-type PrimaryKey = string | number
+type PrimaryKey = string | number;
 
 export class Resource extends BaseResource {
   private knex: Knex;
@@ -31,9 +37,9 @@ export class Resource extends BaseResource {
     this.tableName = info.tableName;
     this._database = info.database;
     this._properties = info.properties;
-    this._properties.forEach((p) => {
+    for (const p of this._properties) {
       this.propertyMap.set(p.path(), p);
-    });
+    }
     this.idColumn = info.idProperty.path();
     this.dialect = info.dialect;
   }
@@ -46,12 +52,11 @@ export class Resource extends BaseResource {
     return this._database;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   override databaseType(): SupportedDatabasesType | string {
     const dialectMap: Record<DatabaseDialect, SupportedDatabasesType> = {
-      mysql: 'MySQL',
-      mysql2: 'MySQL',
-      postgresql: 'Postgres',
+      mysql: "MySQL",
+      mysql2: "MySQL",
+      postgresql: "Postgres",
     };
 
     return dialectMap[this.dialect];
@@ -70,7 +75,7 @@ export class Resource extends BaseResource {
   }
 
   override async count(filter: Filter): Promise<number> {
-    const [r] = await this.filterQuery(filter).count('* as count');
+    const [r] = await this.filterQuery(filter).count("* as count");
     return Number(r.count);
   }
 
@@ -81,7 +86,7 @@ export class Resource extends BaseResource {
       offset?: number;
       sort?: {
         sortBy?: string;
-        direction?: 'asc' | 'desc';
+        direction?: "asc" | "desc";
       };
     },
   ): Promise<BaseRecord[]> {
@@ -145,33 +150,31 @@ export class Resource extends BaseResource {
     return row;
   }
 
-  override async delete(id: string): Promise<void> {
+  override async delete(id: PrimaryKey): Promise<void> {
     const knex = this.schemaName
       ? this.knex.withSchema(this.schemaName)
       : this.knex;
     await knex.from(this.tableName).delete().where(this.idColumn, id);
   }
 
-  private filterQuery(filter: Filter | undefined): Knex.QueryBuilder {
+  private filterQuery(query: Filter | undefined): Knex.QueryBuilder {
     const knex = this.schemaName
       ? this.knex(this.tableName).withSchema(this.schemaName)
       : this.knex(this.tableName);
     const q = knex;
 
-    if (!filter) {
+    if (!query) {
       return q;
     }
 
-    const { filters } = filter;
-
-    Object.entries(filters ?? {}).forEach(([key, filter]) => {
+    for (const [key, filter] of Object.entries(query.filters ?? {})) {
       if (
-        typeof filter.value === 'object'
-        && ['date', 'datetime'].includes(filter.property.type())
+        typeof filter.value === "object" &&
+        ["date", "datetime"].includes(filter.property.type())
       ) {
         q.whereBetween(key, [filter.value.from, filter.value.to]);
-      } else if (filter.property.type() === 'string') {
-        if (this.dialect === 'postgresql') {
+      } else if (filter.property.type() === "string") {
+        if (this.dialect === "postgresql") {
           q.whereILike(key, `%${filter.value}%`);
         } else {
           q.whereLike(key, `%${filter.value}%`);
@@ -179,7 +182,7 @@ export class Resource extends BaseResource {
       } else {
         q.where(key, filter.value);
       }
-    });
+    }
 
     return q;
   }

@@ -10,12 +10,12 @@
     "strictNullChecks": true,
     "esModuleInterop": true,
     "declaration": true,
-    "declarationDir": "./lib",
-    "outDir": "./lib",
+    "declarationDir": "./dist",
+    "outDir": "./dist",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "baseUrl": "."
   },
   "include": ["./src/**/*.ts"],
-  "exclude": ["node_modules", "lib"]
+  "exclude": ["node_modules", "dist"]
 }
