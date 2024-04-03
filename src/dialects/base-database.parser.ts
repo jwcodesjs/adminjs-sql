@@ -1,16 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable class-methods-use-this */
-import type { Knex } from 'knex';
-import KnexModule from 'knex';
+import * as Knex from 'knex';
 
 import { DatabaseMetadata, ResourceMetadata } from '../metadata/index.js';
 
 import { ConnectionOptions, DatabaseDialect } from './types/index.js';
 
-const KnexConnection = KnexModule.knex;
+export type ParseOptions = {
+  ignoredTables: string[];
+}
 
 export class BaseDatabaseParser {
-  protected knex: Knex;
+  protected knex: Knex.Knex;
 
   protected dialect: DatabaseDialect;
 
@@ -26,17 +27,20 @@ export class BaseDatabaseParser {
       throw new Error('Please provide your database');
     }
 
-    const knex = KnexConnection({
-      client: dialect,
-      connection,
-    });
-
     this.dialect = dialect;
     this.connectionOptions = connection;
-    this.knex = knex;
+    this.knex = Knex.knex({
+      client: dialect,
+      connection,
+      searchPath: this.configuredSchema,
+    });
   }
 
-  public async parse(): Promise<DatabaseMetadata> {
+  protected get configuredSchema() {
+    return this.connectionOptions.schema ?? 'public';
+  }
+
+  public async parse(parseOptions: ParseOptions): Promise<DatabaseMetadata> {
     throw new Error('Implement "parse" method for your database parser!');
   }
 
@@ -44,7 +48,7 @@ export class BaseDatabaseParser {
     throw new Error('Implement "getSchema" method for your database parser!');
   }
 
-  public async getTables(schemaName: string): Promise<string[]> {
+  public async getTables(schemaName: string, parseOptions: ParseOptions): Promise<string[]> {
     throw new Error('Implement "getTables" method for your database parser!');
   }
 

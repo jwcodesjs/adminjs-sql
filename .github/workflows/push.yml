@@ -1,31 +1,9 @@
 name: CI/CD
-on: [push, pull_request]
+on: [push]
 jobs:
-  setup:
-    name: setup
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup
-        uses: actions/setup-node@v2
-        with:
-          node-version: '18'
-      - uses: actions/cache@v2
-        id: yarn-cache
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node_modules-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node_modules-
-      - name: Install
-        if: steps.yarn-cache.outputs.cache-hit != 'true'
-        run: yarn install
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs: setup
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -45,10 +23,64 @@ jobs:
         run: yarn install
       - name: Lint
         run: yarn lint
- 
+
+  test-mysql:
+    name: Test MySql
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+      - uses: actions/cache@v2
+        id: yarn-cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node_modules-
+      - name: Start MySQL
+        run: docker compose up mysql -d --build --wait mysql
+      - name: Install
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        run: yarn install
+      - name: 'Test MySql'
+        run: yarn test-mysql --coverage
+
+  test-postgres:
+    name: Test Postgres
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+      - uses: actions/cache@v2
+        id: yarn-cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node_modules-
+      - name: Start Postgres
+        run: docker compose up postgres -d --build --wait postgres
+      - name: Install
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        run: yarn install
+      - name: 'Test Postgres'
+        run: yarn test-postgres --coverage
+
   publish:
     name: Publish
-    needs: test
+    if: github.ref == 'todo'
+    needs:
+      - lint
+      - test-mysql
+      - test-postgres
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

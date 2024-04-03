@@ -7,7 +7,7 @@ import { PropertyType } from 'adminjs';
 import { DatabaseMetadata, ResourceMetadata } from '../metadata/index.js';
 import { ColumnInfo, Property } from '../Property.js';
 
-import { BaseDatabaseParser } from './base-database.parser.js';
+import { BaseDatabaseParser, ParseOptions } from './base-database.parser.js';
 
 const getColumnInfo = (column: Record<string, any>): ColumnInfo => {
   const type = column.DATA_TYPE.toLowerCase();
@@ -94,6 +94,9 @@ const ensureType = (dataType: string, columnType: string): PropertyType => {
   case 'timestamp':
     return 'datetime';
 
+  case 'json':
+    return 'key-value';
+
   default:
     // eslint-disable-next-line no-console
     console.warn(
@@ -106,8 +109,8 @@ const ensureType = (dataType: string, columnType: string): PropertyType => {
 export class MysqlParser extends BaseDatabaseParser {
   public static dialects = ['mysql' as const, 'mysql2' as const];
 
-  public async parse() {
-    const tableNames = await this.getTables();
+  public async parse(parseOptions: ParseOptions) {
+    const tableNames = await this.getTables(this.connectionOptions.database, parseOptions);
     const resources = await this.getResources(tableNames);
     const resourceMap = new Map<string, ResourceMetadata>();
     resources.forEach((r) => {
@@ -117,13 +120,16 @@ export class MysqlParser extends BaseDatabaseParser {
     return new DatabaseMetadata(this.connectionOptions.database, resourceMap);
   }
 
-  public async getTables() {
+  public async getTables(schemaName: string, parseOptions: ParseOptions) {
     const query = await this.knex.raw(`
-      SHOW FULL TABLES FROM \`${this.connectionOptions.database}\` WHERE Table_type = 'BASE TABLE'
+      SHOW FULL TABLES FROM \`${schemaName}\` WHERE Table_type = 'BASE TABLE'
     `);
 
     const result = await query;
-    const tables = result?.[0];
+    const tables = result?.[0] as Array<{
+      Tables_in_test_database: string
+      Table_type: string
+    }>;
 
     if (!tables?.length) {
       // eslint-disable-next-line no-console
@@ -132,11 +138,15 @@ export class MysqlParser extends BaseDatabaseParser {
       return [];
     }
 
-    return tables.reduce((memo, info) => {
+    return tables.reduce<string[]>((memo, info) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars, camelcase
       const { Table_type, ...nameInfo } = info;
 
       const tableName = Object.values(nameInfo ?? {})[0];
+
+      if (parseOptions.ignoredTables.includes(tableName)) {
+        return memo;
+      }
 
       memo.push(tableName);
 
