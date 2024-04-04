@@ -43,6 +43,7 @@ describe("Resource", () => {
           new Property({
             isEditable: false,
             isId: true,
+            isEnum: false,
             isNullable: false,
             name: "id",
             position: 0,
@@ -148,18 +149,20 @@ describe("Resource", () => {
   });
 
   describe("#find", () => {
+    let users: User[];
+
+    beforeAll(async () => {
+      users = [
+        await database.resource("user").create(buildUser()),
+        await database.resource("user").create(buildUser()),
+      ] as User[];
+    });
+
     it("finds by record name", async () => {
-      const users = [buildUser(), buildUser()];
-      await database.resource("user").create(users[0]);
-      await database.resource("user").create(users[1]);
-      const filter = new Filter(undefined, database.resource("user"));
-      filter.filters = {
-        name: {
-          path: "name",
-          value: users[0].name,
-          property: database.resource("user").property("name") as BaseProperty,
-        },
-      };
+      const filter = new Filter(
+        { name: users[0].name },
+        database.resource("user"),
+      );
 
       const record = await database.resource("user").find(filter, {});
 
@@ -169,24 +172,36 @@ describe("Resource", () => {
     });
 
     it("finds by record uuid column", async () => {
-      const user = await database.resource("user").create(buildUser());
-      const user2 = await database.resource("user").create(buildUser());
-
-      const postResource = await getResource("profile");
-      const profile = await postResource.create(buildProfile({ id: user.id! }));
-      await postResource.create(buildProfile({ id: user2.id! }));
-
-      const filter = new Filter(undefined, postResource);
-      filter.filters = {
-        id: {
-          path: "id",
-          value: profile.id,
-          property: postResource.property("id") as BaseProperty,
+      const profileResource = await getResource("profile");
+      const profile = await profileResource.create(
+        buildProfile({ id: users[0].id! }),
+      );
+      await profileResource.create(buildProfile({ id: users[1].id! }));
+      const filter = new Filter(
+        {
+          id: profile.id,
         },
-      };
-      const record = await postResource.find(filter, {});
+        profileResource,
+      );
+
+      const record = await profileResource.find(filter, {});
       expect(record[0].params).toMatchObject(profile);
       expect(record.length).toEqual(1);
+    });
+
+    it("finds by enum column", async () => {
+      const postResource = await getResource("post");
+      const post = await postResource.create({
+        ...buildPost({ id: users[0].id! }),
+        status: "INACTIVE",
+      });
+
+      const filter = new Filter({ status: post.status }, postResource);
+      const records = await postResource.find(filter);
+      expect(records).toSatisfyAll(
+        (record) => record.get("status") === post.status,
+      );
+      expect(records.length).toBeGreaterThanOrEqual(1);
     });
   });
 

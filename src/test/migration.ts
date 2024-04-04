@@ -10,7 +10,15 @@ const getMigration = (
   dialect: DatabaseDialect,
 ): Knex.Migration & { id: string } => ({
   async up(knex: Knex) {
-    return knex.schema
+    let upQuery = knex.schema;
+
+    if (dialect === "postgresql") {
+      upQuery = upQuery.raw(
+        "CREATE TYPE public.status_enum AS ENUM ('active-status-enum', 'inactive-status-enum');",
+      );
+    }
+
+    return upQuery
       .withSchema(schema)
       .createTable("user", (table) => {
         table.increments("id").notNullable();
@@ -42,7 +50,13 @@ const getMigration = (
         table.dateTime("created_at").notNullable().defaultTo(knex.fn.now());
         table.dateTime("updated_at").notNullable().defaultTo(knex.fn.now());
         table.json("some_json");
-        table.enum("status", ["ACTIVE", "INACTIVE"]).notNullable();
+        table
+          .enum("status", ["ACTIVE", "INACTIVE"], {
+            useNative: true,
+            enumName: "status_enum",
+            schemaName: schema,
+          })
+          .notNullable();
         table.text("content").notNullable();
         table.string("title", 255).notNullable();
         table.boolean("published").notNullable().defaultTo(false);
@@ -63,11 +77,18 @@ const getMigration = (
       });
   },
   async down(knex: Knex) {
-    return knex.schema
+    let downQuery = knex.schema
       .withSchema(schema)
       .dropTableIfExists("post")
       .dropTableIfExists("profile")
       .dropTableIfExists("user");
+
+    if (dialect === "postgresql") {
+      downQuery = downQuery.raw("DROP TYPE IF EXISTS public.status_enum");
+      downQuery = downQuery.raw(`DROP TYPE IF EXISTS ${schema}.status_enum`);
+    }
+
+    return downQuery;
   },
   id: "initialize",
 });
