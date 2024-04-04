@@ -2,8 +2,8 @@ import type { Knex } from "knex";
 
 import type { DatabaseDialect } from "../dialects/index.js";
 
-const isMySqlDialect = (dialect: DatabaseDialect) =>
-  dialect === "mysql" || dialect === "mysql2";
+export const isMySqlDialect = (dialect: DatabaseDialect) =>
+  ["mysql", "mariadb"].includes(dialect);
 
 const getMigration = (
   schema: string,

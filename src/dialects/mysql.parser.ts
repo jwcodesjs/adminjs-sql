@@ -110,7 +110,7 @@ const ensureType = (dataType: string, columnType: string): PropertyType => {
 };
 
 export class MysqlParser extends BaseDatabaseParser {
-  public static dialects = ["mysql" as const, "mysql2" as const];
+  public static dialects = ["mysql" as const, "mariadb" as const];
 
   public async parse(parseOptions: ParseOptions) {
     const tableNames = await this.getTables(

@@ -1,5 +1,5 @@
 name: CI/CD
-on: [push]
+on: [ push ]
 jobs:
   lint:
     name: Lint
@@ -30,42 +30,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Lint
-        run: yarn format-check
-
-  test-mysql:
-    name: Test MySql
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
-          run_install: false
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-      - name: Install dependencies
-        run: pnpm install
-      - name: Start MySQL
-        run: docker compose up mysql -d --build --wait mysql
-      - name: 'Test MySql'
-        run: yarn test-mysql --coverage
+        run: pnpm format-check
 
   test-postgres:
+    strategy:
+      matrix:
+        version: [13, 14, 15, 16]
     name: Test Postgres
     runs-on: ubuntu-latest
     steps:
@@ -93,16 +63,86 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - name: Install dependencies
         run: pnpm install
-      - name: Start Postgres
-        run: docker compose up postgres -d --build --wait postgres
-      - name: Test Postgres
-        run: yarn test-postgres --coverage
+      - name: Test
+        run: ./test.sh postgres ${{ matrix.version }} --coverage
+
+  test-mysql:
+    strategy:
+      matrix:
+            version: [8]
+    name: Test MySql
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: false
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      - name: Install dependencies
+        run: pnpm install
+      - name: Test
+        run: ./test.sh mysql ${{ matrix.version }} --coverage
+
+  test-mariadb:
+    name: Test MariaDB
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    strategy:
+      matrix:
+        version: [ 10 ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: false
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      - name: Install dependencies
+        run: pnpm install
+      - name: Test
+        run: ./test.sh mariadb ${{ matrix.version }} --coverage
 
   publish:
     name: Publish
     if: github.ref == 'todo'
     needs:
       - lint
+      - test-mariadb
       - test-mysql
       - test-postgres
     runs-on: ubuntu-latest
@@ -132,10 +172,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: build
-        run: yarn build
+        run: pnpm build
       - name: Release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_WEBHOOK: ${{ secrets.ADMIN_SLACK_WEBHOOK }}
-        run: yarn release
+        run: pnpm release

@@ -1,33 +1,41 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { configDotenv } from "dotenv";
 
 import type { DatabaseDialect } from "../dialects/index.js";
 
 type Env = {
+  DB_HOST: string;
+  DB_NAME: string;
+  DB_PASSWORD: string;
+  DB_PORT: number;
+  DB_SCHEMA?: string;
+  DB_USER: string;
   DIALECT: DatabaseDialect;
-  MYSQL_DATABASE: string;
-  MYSQL_DEFAULT_USER: string;
-  MYSQL_HOST: string;
-  MYSQL_PASSWORD: string;
-  MYSQL_ROOT_PASSWORD: string;
-  POSTGRES_DB: string;
-  POSTGRES_HOST: string;
-  POSTGRES_PASSWORD: string;
-  POSTGRES_USER: string;
-  POSTGRES_SCHEMA: string;
 };
 
 export const getEnv = (): Env => {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const config = configDotenv({
-    path: [path.join(__dirname, "../../test.env")],
+    path: [path.join(__dirname, "../../.env")],
   });
 
-  return {
+  const env = {
     DIALECT: "mysql",
     ...process.env,
     ...config.parsed,
   } as Env;
+
+  env.DB_PORT = Number(env.DB_PORT || "3306");
+  return env;
+};
+
+export const logEnv = (env: Env) => {
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(
+    "Test environment:",
+    Object.entries(env).filter(
+      ([key]) =>
+        key.startsWith("DB_") || key === "DIALECT" || key === "SERVICE",
+    ),
+  );
 };
