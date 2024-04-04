@@ -1,14 +1,11 @@
-import { ResourceMetadata } from './ResourceMetadata.js';
+import type { ResourceMetadata } from "./ResourceMetadata.js";
 
 export class DatabaseMetadata {
   public readonly database: string;
 
   protected resourceMap: Map<string, ResourceMetadata>;
 
-  constructor(
-    database: string,
-    resourceMap: Map<string, ResourceMetadata>,
-  ) {
+  constructor(database: string, resourceMap: Map<string, ResourceMetadata>) {
     this.database = database;
     this.resourceMap = resourceMap;
   }

@@ -1,4 +1,4 @@
-import { getDatabase, setupDatabase } from './db.js';
+import { getDatabase, setupDatabase } from "./db.js";
 
 export async function setup() {
   const { knex, config } = getDatabase();
@@ -7,8 +7,7 @@ export async function setup() {
     await setupDatabase(config, knex);
     await knex.destroy();
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Failed setting up the database', error);
+    console.error("Failed setting up the database", error);
     process.exit(1);
   }
 }

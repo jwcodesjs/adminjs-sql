@@ -1,2 +1,2 @@
-export { DatabaseMetadata } from './DatabaseMetadata.js';
-export { ResourceMetadata } from './ResourceMetadata.js';
+export { DatabaseMetadata } from "./DatabaseMetadata.js";
+export { ResourceMetadata } from "./ResourceMetadata.js";

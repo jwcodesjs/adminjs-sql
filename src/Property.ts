@@ -1,4 +1,4 @@
-import { BaseProperty, PropertyType } from 'adminjs';
+import { BaseProperty, type PropertyType } from "adminjs";
 
 export type ColumnInfo = {
   name: string;
@@ -10,7 +10,7 @@ export type ColumnInfo = {
   type: PropertyType;
   referencedTable: string | null;
   availableValues?: string[] | null;
-}
+};
 
 export class Property extends BaseProperty {
   private readonly _isPrimary: boolean;
@@ -72,14 +72,14 @@ export class Property extends BaseProperty {
     return this._referencedTable;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   override availableValues(): Array<string> | null {
-    if (this._availableValues) return this._availableValues;
+    if (this._availableValues) {
+      return this._availableValues;
+    }
 
     return null;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   override subProperties(): BaseProperty[] {
     return [];
   }
