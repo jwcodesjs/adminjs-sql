@@ -97,6 +97,8 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - name: Install dependencies
         run: pnpm install
+      - name: Start database
+        run: docker compose up mysql${{ matrix.version }} --wait
       - name: Test
         run: ./test.sh mysql ${{ matrix.version }} --coverage
 
