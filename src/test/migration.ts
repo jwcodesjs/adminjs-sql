@@ -50,6 +50,11 @@ const getMigration = (
         table.dateTime("created_at").notNullable().defaultTo(knex.fn.now());
         table.dateTime("updated_at").notNullable().defaultTo(knex.fn.now());
         table.json("some_json");
+
+        if (isMySqlDialect(dialect)) {
+          table.check("JSON_VALID(some_json)");
+        }
+
         table
           .enum("status", ["ACTIVE", "INACTIVE"], {
             useNative: true,

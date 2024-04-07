@@ -1,11 +1,19 @@
 import { type BaseRecord, Filter } from "adminjs";
-import type { Database } from "../Database.js";
+import { beforeAll } from "vitest";
+import { Database } from "../Database.js";
 import type { Resource } from "../Resource.js";
-import { buildUser } from "./fixtures.js";
+import { getDatabaseConfig } from "./db.js";
+import { buildUser, getAdapter } from "./fixtures.js";
 import type { Post, Profile, User } from "./types.js";
 
 export function useFixtures() {
   let database: Database;
+
+  beforeAll(async () => {
+    const adapter = getAdapter(getDatabaseConfig());
+    const databaseMetadata = await adapter.init();
+    database = new Database(databaseMetadata);
+  });
 
   const fixtures = {
     async createUser() {

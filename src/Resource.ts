@@ -11,6 +11,7 @@ import type { Knex } from "knex";
 import type { Property } from "./Property.js";
 import type { DatabaseDialect } from "./dialects/index.js";
 import { ResourceMetadata } from "./metadata/index.js";
+import { safeParseJSON } from "./utils/helpers.js";
 
 type PrimaryKey = string | number;
 type ParamValue =
@@ -109,7 +110,7 @@ export class Resource extends BaseResource {
       query.orderBy(options.sort.sortBy, options.sort.direction);
     }
     const rows: any[] = await query;
-    return rows.map((row) => new BaseRecord(row, this));
+    return rows.map((row) => this.build(row));
   }
 
   override async findOne(id: PrimaryKey): Promise<BaseRecord | null> {
@@ -129,7 +130,27 @@ export class Resource extends BaseResource {
   }
 
   override build(params: Record<string, any>): BaseRecord {
-    return new BaseRecord(params, this);
+    const preparedValues = this.prepareReturnValues(params);
+    return new BaseRecord(preparedValues, this);
+  }
+
+  private prepareReturnValues(
+    params: Record<string, any>,
+  ): Record<string, any> {
+    const preparedValues: Record<string, any> = {};
+
+    for (const property of this.properties()) {
+      const param = flat.get(params, property.path());
+      const key = property.path();
+
+      if (property.type() === "key-value" && typeof param === "string") {
+        preparedValues[key] = safeParseJSON(param);
+      } else {
+        preparedValues[key] = param;
+      }
+    }
+
+    return preparedValues;
   }
 
   override async create(params: Record<string, any>): Promise<ParamsType> {

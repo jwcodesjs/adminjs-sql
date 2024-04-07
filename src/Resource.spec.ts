@@ -133,21 +133,18 @@ describe("Resource", () => {
       expect(recordInDb?.get("title")).toEqual(title);
     });
 
-    it.skipIf(dbConfig.config.dialect === "mariadb")(
-      "updates key-value column",
-      async () => {
-        await database.resource("post").update(post.id, {
-          some_json: { foo: "bar" },
-        });
+    it("updates key-value column", async () => {
+      await database.resource("post").update(post.id, {
+        some_json: { foo: "bar" },
+      });
 
-        const recordInDb = await fixtures.findOne(database.resource("post"), {
-          id: post.id,
-        });
-        expect(recordInDb?.get("some_json")).toMatchObject({
-          foo: "bar",
-        });
-      },
-    );
+      const recordInDb = await fixtures.findOne(database.resource("post"), {
+        id: post.id,
+      });
+      expect(recordInDb?.get("some_json")).toMatchObject({
+        foo: "bar",
+      });
+    });
   });
 
   describe("#findOne", () => {

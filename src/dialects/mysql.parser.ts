@@ -12,9 +12,21 @@ import {
   type ParseOptions,
 } from "./base-database.parser.js";
 
-const getColumnInfo = (column: Record<string, any>): ColumnInfo => {
-  const type = column.DATA_TYPE.toLowerCase();
+const getColumnInfo = (
+  column: Record<string, any>,
+  constraints: Record<string, any>[],
+): ColumnInfo => {
+  let type = column.DATA_TYPE.toLowerCase();
   const columnType = column.COLUMN_TYPE;
+
+  const hasJsonValidConstraint = constraints.some(
+    (constraint) =>
+      constraint.CHECK_CLAUSE === `json_valid(\`${column.COLUMN_NAME}\`)`,
+  );
+
+  if (hasJsonValidConstraint) {
+    type = "json";
+  }
 
   let availableValues: string[] | null = null;
   if (type === "set" || type === "enum") {
@@ -184,7 +196,7 @@ export class MysqlParser extends BaseDatabaseParser {
   }
 
   public async getProperties(table: string) {
-    const query = this.knex
+    const colQuery = this.knex
       .from("information_schema.COLUMNS as col")
       .select(
         "col.COLUMN_NAME as COLUMN_NAME",
@@ -209,8 +221,19 @@ export class MysqlParser extends BaseDatabaseParser {
       .where("col.TABLE_SCHEMA", this.connectionOptions.database)
       .where("col.TABLE_NAME", table);
 
-    const columns = await query;
+    const columns = await colQuery;
+    const constraintQuery = this.knex
+      .from("information_schema.TABLE_CONSTRAINTS as cons")
+      .leftJoin("information_schema.CHECK_CONSTRAINTS as checks", (c) =>
+        c
+          .on("checks.CONSTRAINT_SCHEMA", "cons.CONSTRAINT_SCHEMA")
+          .on("checks.CONSTRAINT_NAME", "cons.CONSTRAINT_NAME"),
+      )
+      .where("cons.TABLE_SCHEMA", this.connectionOptions.database)
+      .where("cons.TABLE_NAME", table);
 
-    return columns.map((col) => new Property(getColumnInfo(col)));
+    const constraints = await constraintQuery;
+
+    return columns.map((col) => new Property(getColumnInfo(col, constraints)));
   }
 }
