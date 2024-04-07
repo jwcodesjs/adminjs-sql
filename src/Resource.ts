@@ -4,6 +4,7 @@ import {
   type Filter,
   type ParamsType,
   type SupportedDatabasesType,
+  flat,
 } from "adminjs";
 import type { Knex } from "knex";
 
@@ -12,6 +13,13 @@ import type { DatabaseDialect } from "./dialects/index.js";
 import { ResourceMetadata } from "./metadata/index.js";
 
 type PrimaryKey = string | number;
+type ParamValue =
+  | string
+  | boolean
+  | number
+  | Record<string, any>
+  | null
+  | undefined;
 
 export class Resource extends BaseResource {
   private knex: Knex;
@@ -141,13 +149,42 @@ export class Resource extends BaseResource {
       ? this.knex.withSchema(this.schemaName)
       : this.knex;
 
-    await knex.from(this.tableName).update(params).where(this.idColumn, id);
+    const preparedParams = this.prepareParams(params);
+    await knex
+      .from(this.tableName)
+      .update(preparedParams)
+      .where(this.idColumn, id);
 
     const knexQb = this.schemaName
       ? this.knex(this.tableName).withSchema(this.schemaName)
       : this.knex(this.tableName);
     const [row] = await knexQb.where(this.idColumn, id);
     return row;
+  }
+
+  private prepareParams(params: Record<string, any>): Record<string, any> {
+    const preparedParams: Record<string, any> = {};
+    for (const property of this.properties()) {
+      const param = flat.get(params, property.path());
+      if (param === undefined) {
+        continue;
+      }
+
+      const key = property.path();
+      preparedParams[key] = this.convertParam(property, param);
+    }
+
+    return preparedParams;
+  }
+
+  private convertParam(property: Property, value: ParamValue): ParamValue {
+    const type = property.type();
+
+    if (type === "key-value") {
+      return JSON.stringify(value);
+    }
+
+    return value;
   }
 
   override async delete(id: PrimaryKey): Promise<void> {

@@ -2,7 +2,6 @@ import crypto from "node:crypto";
 
 import { Adapter } from "../Adapter.js";
 import type { ConnectionOptions } from "../dialects/index.js";
-
 import type { DatabaseConfig, Post, Profile, User } from "./types.js";
 
 export const buildUser = (): User => ({
