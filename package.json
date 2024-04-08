@@ -5,6 +5,12 @@
   "repository": "git@github.com:jwcodesjs/adminjs-sql.git",
   "author": "Rafal Dziegielewski <rafal.dzieg@gmail.com>",
   "license": "MIT",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "keywords": [
     "sql",
     "postgres",
