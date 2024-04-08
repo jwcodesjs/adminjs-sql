@@ -1,8 +1,8 @@
 {
   "name": "@adminjs/sql",
-  "version": "2.2.2",
+  "version": "2.3.0",
   "type": "module",
-  "repository": "git@github.com:SoftwareBrothers/adminjs-sql.git",
+  "repository": "git@github.com:jwcodesjs/adminjs-sql.git",
   "author": "Rafal Dziegielewski <rafal.dzieg@gmail.com>",
   "license": "MIT",
   "keywords": [
@@ -13,7 +13,7 @@
     "database",
     "adapter"
   ],
-  "description": "An official AdminJS adapter for SQL databases.",
+  "description": "An un-official AdminJS adapter for SQL databases.",
   "scripts": {
     "clean": "rimraf dist",
     "build": "tsc",
