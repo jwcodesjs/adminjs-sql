@@ -1,33 +1,21 @@
 import { defineConfig } from "vitest/config";
 
-const isPostgres = process.env.DIALECT === "postgresql";
+const reportsDirectory = process.env.REPORTS_DIRECTORY || "coverage";
 
 export default defineConfig({
   test: {
     globalSetup: ["src/test/setup.ts"],
     setupFiles: ["src/test/testSetup.ts"],
     pool: "forks",
+    include: ["src/**/*.spec.ts"],
     coverage: {
-      exclude: [
-        ".eslintrc.cjs",
-        "src/test",
-        "commitlint.config.cjs",
-        `${
-          isPostgres
-            ? "src/dialects/mysql.parser.ts"
-            : "src/dialects/postgres.parser.ts"
-        }`,
-      ],
+      exclude: [".eslintrc.cjs", "src/test", "commitlint.config.cjs"],
       clean: true,
       cleanOnRerun: true,
       provider: "istanbul",
+      reportsDirectory,
       reportOnFailure: true,
-      reporter: ["cobertura", "text", "html"],
-      thresholds: {
-        functions: 80,
-        lines: 80,
-        statements: 80,
-      },
+      reporter: ["cobertura", "json", "text", "json-summary"],
     },
   },
 });

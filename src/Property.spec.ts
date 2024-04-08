@@ -102,10 +102,13 @@ describe("Property", () => {
   });
 
   describe("#type", () => {
-    it("returns mixed type for an jsonb property", () => {
-      const property = getProperty("some_json");
+    it.skipIf(config.dialect === "mariadb")(
+      "returns mixed type for an jsonb property",
+      () => {
+        const property = getProperty("some_json");
 
-      expect(property?.type()).toEqual("key-value");
-    });
+        expect(property?.type()).toEqual("key-value");
+      },
+    );
   });
 });

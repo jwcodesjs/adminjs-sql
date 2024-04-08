@@ -1,6 +1,6 @@
 import type { Knex } from "knex/types";
 
-export type DatabaseDialect = "postgresql" | "mysql" | "mysql2";
+export type DatabaseDialect = "postgresql" | "mysql" | "mariadb";
 
 export interface BaseConnectionConfig {
   database: string;

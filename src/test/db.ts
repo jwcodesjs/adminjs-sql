@@ -5,7 +5,10 @@ import { getMigrationSource } from "./migration.js";
 import type { DatabaseConfig } from "./types.js";
 
 export async function setupDatabase(config: DatabaseConfig, knex: Knex.Knex) {
-  const migrationSource = getMigrationSource(config.schema, config.dialect);
+  const migrationSource = getMigrationSource(
+    config.schema || config.database,
+    config.dialect,
+  );
 
   await knex.migrate.down({
     database: config.database,
@@ -22,32 +25,43 @@ export async function setupDatabase(config: DatabaseConfig, knex: Knex.Knex) {
 
 export const getDatabaseConfig = (): DatabaseConfig => {
   const env = getEnv();
+
   switch (env.DIALECT) {
+    case "mysql":
+      return {
+        charset: "utf8",
+        client: "mysql2",
+        database: env.DB_NAME,
+        databaseType: "MySQL",
+        dialect: env.DIALECT,
+        host: env.DB_HOST,
+        password: env.DB_PASSWORD,
+        port: env.DB_PORT,
+        user: env.DB_USER,
+      };
+    case "mariadb":
+      return {
+        charset: "utf8",
+        client: "mysql2",
+        database: env.DB_NAME,
+        databaseType: "MariaDB",
+        dialect: env.DIALECT,
+        host: env.DB_HOST,
+        password: env.DB_PASSWORD,
+        port: env.DB_PORT,
+        user: env.DB_USER,
+      };
     case "postgresql":
       return {
         client: "pg",
-        database: env.POSTGRES_DB,
+        database: env.DB_NAME,
         databaseType: "Postgres",
-        dialect: "postgresql",
-        host: env.POSTGRES_HOST,
-        password: env.POSTGRES_PASSWORD,
-        port: 5432,
-        schema: env.POSTGRES_SCHEMA,
-        user: env.POSTGRES_USER,
-      };
-    case "mysql2":
-    case "mysql":
-      return {
-        client: "mysql2",
-        database: env.MYSQL_DATABASE,
-        databaseType: "MySQL",
-        dialect: "mysql2",
-        host: env.MYSQL_HOST,
-        password: env.MYSQL_ROOT_PASSWORD,
-        port: 3306,
-        schema: env.MYSQL_DATABASE,
-        user: env.MYSQL_DEFAULT_USER,
-        charset: "utf8",
+        dialect: env.DIALECT,
+        host: env.DB_HOST,
+        password: env.DB_PASSWORD,
+        port: env.DB_PORT,
+        schema: env.DB_SCHEMA,
+        user: env.DB_USER,
       };
     default:
       throw new Error(`Unknown database dialect: ${env.DIALECT}`);

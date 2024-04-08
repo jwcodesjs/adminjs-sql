@@ -1,26 +1,75 @@
-version: '3'
-services:
-  mysql:
-    build:
-      dockerfile: ./docker/mysql/Dockerfile
-      context: .
-    command: --default-authentication-plugin=mysql_native_password
-    restart: always
-    env_file:
-      - ./test.env
-    ports:
-      - "3306:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+version: '3.4'
 
-  postgres:
-    build:
-      dockerfile: ./docker/postgres/Dockerfile
-      context: .
-    restart: always
-    env_file:
-      - ./test.env
+x-healthcheck: &healthcheck
+  interval: 5s
+  timeout: 30s
+  start_period: 0s
+  start_interval: 5s
+  retries: 10
+
+services:
+  mariadb10: &mariadb
+    image: mariadb:10
     ports:
-      - "5432:5432"
+      - '3300:3306'
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
+      <<: *healthcheck
+      test:
+        [
+          'CMD',
+          'healthcheck.sh',
+          '--su-mysql',
+          '--connect',
+          '--innodb_initialized',
+        ]
+    volumes:
+      - ./docker/mariadb-init.sh:/docker-entrypoint-initdb.d/mariadb-init.sh
+    environment:
+      MARIADB_ROOT_PASSWORD: mariadb_root_password
+      DB_NAME: test_database
+
+  mysql8: &mysql
+    image: mysql:8
+    ports:
+      - '3306:3306'
+    healthcheck:
+      <<: *healthcheck
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+    volumes:
+      - ./docker/mysql-init.sh:/docker-entrypoint-initdb.d/mysql-init.sh
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql_root_password
+      DB_NAME: test_database
+
+  postgres13: &postgres
+    image: postgres:13
+    volumes:
+      - ./docker/postgres-init.sh:/docker-entrypoint-initdb.d/postgres-init.sh
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres_user
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: test_database
+      POSTGRES_SCHEMA: postgres_schema
+    healthcheck:
+      <<: *healthcheck
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+
+  postgres14:
+    <<: *postgres
+    image: postgres:14
+    ports:
+      - '5433:5432'
+
+  postgres15:
+    <<: *postgres
+    image: postgres:15
+    ports:
+      - '5434:5432'
+
+  postgres16:
+    <<: *postgres
+    image: postgres:16
+    ports:
+      - '5435:5432'

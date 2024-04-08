@@ -1,6 +1,8 @@
 import { getDatabase, setupDatabase } from "./db.js";
+import { getEnv, logEnv } from "./env.js";
 
 export async function setup() {
+  logEnv(getEnv());
   const { knex, config } = getDatabase();
 
   try {

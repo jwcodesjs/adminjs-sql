@@ -37,7 +37,7 @@ describe("Resource", () => {
         dbConfig.config.dialect,
         dbConfig.knex,
         dbConfig.config.database,
-        dbConfig.config.schema,
+        dbConfig.config.schema || dbConfig.config.database,
         "user",
         [
           new Property({

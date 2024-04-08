@@ -38,7 +38,7 @@ export const getAdapter = (config: DatabaseConfig) => {
     user: config.user,
   };
 
-  if (config.dialect !== "mysql2") {
+  if (config.dialect === "postgresql") {
     connection.schema = config.schema;
   }
 

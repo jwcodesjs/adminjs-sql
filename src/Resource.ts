@@ -54,8 +54,8 @@ export class Resource extends BaseResource {
 
   override databaseType(): SupportedDatabasesType | string {
     const dialectMap: Record<DatabaseDialect, SupportedDatabasesType> = {
+      mariadb: "MariaDB",
       mysql: "MySQL",
-      mysql2: "MySQL",
       postgresql: "Postgres",
     };
 

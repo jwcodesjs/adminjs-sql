@@ -8,6 +8,12 @@ export type ParseOptions = {
   ignoredTables: string[];
 };
 
+const dialectMap: Record<DatabaseDialect, "pg" | "mysql2"> = {
+  mysql: "mysql2",
+  mariadb: "mysql2",
+  postgresql: "pg",
+};
+
 export class BaseDatabaseParser {
   protected knex: Knex.Knex;
 
@@ -25,7 +31,7 @@ export class BaseDatabaseParser {
     this.dialect = dialect;
     this.connectionOptions = connection;
     this.knex = Knex.knex({
-      client: dialect,
+      client: dialectMap[dialect],
       connection,
       searchPath: this.configuredSchema,
     });
