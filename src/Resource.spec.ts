@@ -119,9 +119,7 @@ describe("Resource", () => {
 
     beforeEach(async () => {
       const user = await fixtures.createUser();
-      post = await database
-        .resource("post")
-        .create(buildPost({ id: user.id }));
+      post = await database.resource("post").create(buildPost({ id: user.id }));
     });
 
     it("updates string column", async () => {
@@ -176,10 +174,7 @@ describe("Resource", () => {
     let users: Required<User>[];
 
     beforeAll(async () => {
-      users = await Promise.all([
-        fixtures.createUser(),
-        fixtures.createUser(),
-      ])
+      users = await Promise.all([fixtures.createUser(), fixtures.createUser()]);
     });
 
     it("finds by record name", async () => {
@@ -253,7 +248,7 @@ describe("Resource", () => {
     let user: Required<User>;
 
     beforeEach(async () => {
-      user = await fixtures.createUser()
+      user = await fixtures.createUser();
     });
 
     it("deletes the resource", async () => {
