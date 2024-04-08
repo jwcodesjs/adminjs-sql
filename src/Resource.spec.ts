@@ -94,7 +94,7 @@ describe("Resource", () => {
       const user = await fixtures.createUser();
       const post = await database
         .resource("post")
-        .create(buildPost({ id: user.id! }));
+        .create(buildPost({ id: user.id }));
 
       const filter = new Filter(
         { author_id: post.author_id },
@@ -121,7 +121,7 @@ describe("Resource", () => {
       const user = await fixtures.createUser();
       post = await database
         .resource("post")
-        .create(buildPost({ id: user.id! }));
+        .create(buildPost({ id: user.id }));
     });
 
     it("updates string column", async () => {
@@ -150,7 +150,7 @@ describe("Resource", () => {
   describe("#findOne", () => {
     it("finds record by id", async () => {
       const user = await fixtures.createUser();
-      const record = await database.resource("user").findOne(user.id!);
+      const record = await database.resource("user").findOne(user.id);
       expect(record?.params).toMatchObject(user);
     });
   });
@@ -173,13 +173,13 @@ describe("Resource", () => {
   });
 
   describe("#find", () => {
-    let users: User[];
+    let users: Required<User>[];
 
     beforeAll(async () => {
-      users = [
-        await fixtures.createUser(),
-        await fixtures.createUser(),
-      ] as User[];
+      users = await Promise.all([
+        fixtures.createUser(),
+        fixtures.createUser(),
+      ])
     });
 
     it("finds by record name", async () => {
@@ -235,7 +235,7 @@ describe("Resource", () => {
   //   let profileResource: Resource;
   //
   //   beforeEach(async () => {
-  //     user = await fixtures.createUser() as User;
+  //     user = await fixtures.createUser()
   //     profileResource = await getResource("profile");
   //   });
   //
@@ -250,15 +250,15 @@ describe("Resource", () => {
   // });
 
   describe("#delete", () => {
-    let user: User;
+    let user: Required<User>;
 
     beforeEach(async () => {
-      user = (await fixtures.createUser()) as User;
+      user = await fixtures.createUser()
     });
 
     it("deletes the resource", async () => {
-      await database.resource("user").delete(user.id!);
-      expect(await database.resource("user").findOne(user.id!)).toBe(null);
+      await database.resource("user").delete(user.id);
+      expect(await database.resource("user").findOne(user.id)).toBe(null);
     });
   });
 });

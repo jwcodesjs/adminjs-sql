@@ -18,7 +18,7 @@ export function useFixtures() {
   const fixtures = {
     async createUser() {
       const user = await database.resource("user").create(buildUser());
-      return user;
+      return user as Required<User>;
     },
     async findMany<T = User | Profile | Post>(
       resource: Resource,
