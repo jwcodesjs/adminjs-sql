@@ -1,4 +1,4 @@
-import * as Knex from "knex";
+import knex, { type Knex } from 'knex';
 
 import type { DatabaseMetadata, ResourceMetadata } from "../metadata/index.js";
 
@@ -15,7 +15,7 @@ const dialectMap: Record<DatabaseDialect, "pg" | "mysql2"> = {
 };
 
 export class BaseDatabaseParser {
-  protected knex: Knex.Knex;
+  protected knex: Knex;
 
   protected dialect: DatabaseDialect;
 
@@ -30,7 +30,7 @@ export class BaseDatabaseParser {
 
     this.dialect = dialect;
     this.connectionOptions = connection;
-    this.knex = Knex.knex({
+    this.knex = knex({
       client: dialectMap[dialect],
       connection,
       searchPath: this.configuredSchema,

@@ -1,10 +1,9 @@
-import * as Knex from "knex";
-
+import knex, { type Knex } from 'knex';
 import { getEnv } from "./env.js";
 import { getMigrationSource } from "./migration.js";
 import type { DatabaseConfig } from "./types.js";
 
-export async function setupDatabase(config: DatabaseConfig, knex: Knex.Knex) {
+export async function setupDatabase(config: DatabaseConfig, knex: Knex) {
   const migrationSource = getMigrationSource(
     config.schema || config.database,
     config.dialect,
@@ -76,8 +75,8 @@ export const getDatabase = () => {
   };
 };
 
-export const createKnex = (databaseConfig: DatabaseConfig): Knex.Knex =>
-  Knex.knex({
+export const createKnex = (databaseConfig: DatabaseConfig): Knex =>
+  knex({
     client: databaseConfig.client,
     connection: {
       charset: databaseConfig.charset,
