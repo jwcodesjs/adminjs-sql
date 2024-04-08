@@ -1,6 +1,6 @@
 {
   "name": "@adminjs/sql",
-  "version": "2.3.0",
+  "version": "2.3.2",
   "type": "module",
   "repository": "git@github.com:jwcodesjs/adminjs-sql.git",
   "author": "Rafal Dziegielewski <rafal.dzieg@gmail.com>",
