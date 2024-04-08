@@ -30,12 +30,13 @@ export const getEnv = (): Env => {
 };
 
 export const logEnv = (env: Env) => {
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
-  console.log(
-    "Test environment:",
-    Object.entries(env).filter(
+  const envString = Object.entries(env)
+    .filter(
       ([key]) =>
         key.startsWith("DB_") || key === "DIALECT" || key === "SERVICE",
-    ),
-  );
+    )
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log("Test environment:\n", envString.trim());
 };

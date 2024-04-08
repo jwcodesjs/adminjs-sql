@@ -1,4 +1,4 @@
-import { BaseProperty, Filter } from "adminjs";
+import { BaseProperty, Filter, type ParamsType } from "adminjs";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { Database } from "./Database.js";
@@ -6,13 +6,9 @@ import { Property } from "./Property.js";
 import { Resource } from "./Resource.js";
 import { ResourceMetadata } from "./metadata/index.js";
 import { getDatabase } from "./test/db.js";
-import {
-  buildPost,
-  buildProfile,
-  buildUser,
-  getAdapter,
-} from "./test/fixtures.js";
+import { buildPost, buildProfile, getAdapter } from "./test/fixtures.js";
 import type { User } from "./test/types.js";
+import { useFixtures } from "./test/useFixtures.js";
 
 const dbConfig = getDatabase();
 
@@ -21,6 +17,8 @@ async function getResource(table: string) {
   const databaseMetadata = await adapter.init();
   return new Database(databaseMetadata).resource(table);
 }
+
+const fixtures = useFixtures();
 
 describe("Resource", () => {
   let database: Database;
@@ -90,52 +88,76 @@ describe("Resource", () => {
 
   describe("#count", () => {
     it("returns number of records", async () => {
-      const count = await database.resource("post").count({} as Filter);
+      let count = await database.resource("post").count({} as Filter);
       expect(count).toBeGreaterThanOrEqual(0);
+
+      const user = await fixtures.createUser();
+      const post = await database
+        .resource("post")
+        .create(buildPost({ id: user.id }));
+
+      const filter = new Filter(
+        { author_id: post.author_id },
+        database.resource("post"),
+      );
+
+      count = await database.resource("post").count(filter);
+      expect(count).toEqual(1);
     });
   });
 
   describe("#create", () => {
     it("returns params", async () => {
-      const user = await database.resource("user").create(buildUser());
+      const user = await fixtures.createUser();
 
       expect(user.id).toBeDefined();
     });
   });
 
   describe("#update", () => {
-    it("updates record name", async () => {
-      const user = await database.resource("user").create(buildUser());
-      const post = await database
-        .resource("post")
-        .create(buildPost({ id: user.id! }));
-      const record = await database.resource("post").findOne(post.id);
-      const title = "Michael";
+    let post: ParamsType;
 
-      await database.resource("post").update(record?.id() as string, {
+    beforeEach(async () => {
+      const user = await fixtures.createUser();
+      post = await database.resource("post").create(buildPost({ id: user.id }));
+    });
+
+    it("updates string column", async () => {
+      const title = "Michael";
+      await database.resource("post").update(post.id, {
         title,
       });
-      const recordInDb = await database
-        .resource("post")
-        .findOne(record?.id() as string);
+      const recordInDb = await database.resource("post").findOne(post.id);
       expect(recordInDb?.get("title")).toEqual(title);
+    });
+
+    it("updates key-value column", async () => {
+      await database.resource("post").update(post.id, {
+        some_json: { foo: "bar" },
+      });
+
+      const recordInDb = await fixtures.findOne(database.resource("post"), {
+        id: post.id,
+      });
+      expect(recordInDb?.get("some_json")).toMatchObject({
+        foo: "bar",
+      });
     });
   });
 
   describe("#findOne", () => {
     it("finds record by id", async () => {
-      const userObject = buildUser();
-      await database.resource("user").create(userObject);
-      const record = await database.resource("user").findOne(userObject.id!);
-      expect(record?.params).toMatchObject(userObject);
+      const user = await fixtures.createUser();
+      const record = await database.resource("user").findOne(user.id);
+      expect(record?.params).toMatchObject(user);
     });
   });
 
   describe("#findMany", () => {
     it("finds records by ids", async () => {
       const users = await Promise.all([
-        database.resource("user").create(buildUser()),
-        database.resource("user").create(buildUser()),
+        fixtures.createUser(),
+        fixtures.createUser(),
       ]);
 
       const records = await database
@@ -149,13 +171,10 @@ describe("Resource", () => {
   });
 
   describe("#find", () => {
-    let users: User[];
+    let users: Required<User>[];
 
     beforeAll(async () => {
-      users = [
-        await database.resource("user").create(buildUser()),
-        await database.resource("user").create(buildUser()),
-      ] as User[];
+      users = await Promise.all([fixtures.createUser(), fixtures.createUser()]);
     });
 
     it("finds by record name", async () => {
@@ -211,7 +230,7 @@ describe("Resource", () => {
   //   let profileResource: Resource;
   //
   //   beforeEach(async () => {
-  //     user = await database.resource("user").create(buildUser()) as User;
+  //     user = await fixtures.createUser()
   //     profileResource = await getResource("profile");
   //   });
   //
@@ -226,15 +245,15 @@ describe("Resource", () => {
   // });
 
   describe("#delete", () => {
-    let user: User;
+    let user: Required<User>;
 
     beforeEach(async () => {
-      user = (await database.resource("user").create(buildUser())) as User;
+      user = await fixtures.createUser();
     });
 
     it("deletes the resource", async () => {
-      await database.resource("user").delete(user.id!);
-      expect(await database.resource("user").findOne(user.id!)).toBe(null);
+      await database.resource("user").delete(user.id);
+      expect(await database.resource("user").findOne(user.id)).toBe(null);
     });
   });
 });
