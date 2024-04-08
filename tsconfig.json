@@ -6,7 +6,7 @@
     "lib": ["esnext", "DOM"],
     "skipLibCheck": true,
     "sourceMap": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "strictNullChecks": true,
     "esModuleInterop": true,
     "declaration": true,
