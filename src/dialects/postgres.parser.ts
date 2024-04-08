@@ -1,5 +1,6 @@
 import type { PropertyType } from "adminjs";
 
+import type { QueryResult } from "pg";
 import { type ColumnInfo, Property } from "../Property.js";
 import { DatabaseMetadata, ResourceMetadata } from "../metadata/index.js";
 
@@ -97,22 +98,19 @@ export class PostgresParser extends BaseDatabaseParser {
   }
 
   public async getTables(schemaName: string, parseOptions: ParseOptions) {
-    const query = await this.knex.raw(`
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_type='BASE TABLE'
-      AND table_schema='${schemaName}'
-    `);
+    const result = (await this.knex
+      .from("information_schema.tables")
+      .select("table_name")
+      .where("table_type", "BASE TABLE")
+      .where("table_schema", schemaName)) as { table_name: string }[];
 
-    const result = await query;
-
-    if (!result?.rows?.length) {
+    if (!result.length) {
       console.warn(`No tables in database ${this.connectionOptions.database}`);
 
       return [];
     }
 
-    return result.rows
+    return result
       .map(({ table_name: table }) => table)
       .filter((table: string) => !parseOptions.ignoredTables.includes(table));
   }
@@ -173,7 +171,13 @@ export class PostgresParser extends BaseDatabaseParser {
 
     const columns = await query;
 
-    const relQuery = this.knex.raw(`
+    const relQuery = this.knex.raw<
+      QueryResult<{
+        col: string;
+        referenced_table: string;
+        table: string;
+      }>
+    >(`
       select
         (select r.relname from pg_class r where r.oid = c.conrelid) as table, 
         (select array_agg(attname) from pg_attribute 
